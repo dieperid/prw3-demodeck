@@ -1,9 +1,7 @@
 import {
-  Form,
   isRouteErrorResponse,
   Links,
   Meta,
-  NavLink,
   Outlet,
   redirect,
   Scripts,
@@ -16,6 +14,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { destroyAuthCookie, isAuthenticated } from "~/lib/auth.server";
 import { store } from "./config/store";
+import { Navbar } from "./components/Navbar";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -69,42 +68,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">
-      <header className="border-b border-stone-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <NavLink
-              className="text-lg font-semibold tracking-tight text-stone-950"
-              to="/"
-            >
-              DemoDeck
-            </NavLink>
-          </div>
-
-          <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <NavItem to="/">Home</NavItem>
-            <NavItem to="/authors">Authors</NavItem>
-            {isAuthenticated ? (
-              <NavItem to="/projects/new">New project</NavItem>
-            ) : null}
-            {!isAuthenticated ? <NavItem to="/login">Login</NavItem> : null}
-            {!isAuthenticated ? (
-              <NavItem to="/register">Register</NavItem>
-            ) : null}
-            {isAuthenticated ? (
-              <Form action="/" method="post">
-                <button
-                  className="rounded-full border border-stone-300 px-4 py-2 font-medium text-stone-700 transition hover:border-stone-950 hover:text-stone-950"
-                  name="_intent"
-                  type="submit"
-                  value="logout"
-                >
-                  Logout
-                </button>
-              </Form>
-            ) : null}
-          </nav>
-        </div>
-      </header>
+      <Navbar isAuthenticated={isAuthenticated} />
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         <Outlet />
@@ -146,23 +110,5 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </pre>
       )}
     </main>
-  );
-}
-
-function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
-  return (
-    <NavLink
-      className={({ isActive }) =>
-        [
-          "rounded-full px-4 py-2 font-medium transition",
-          isActive
-            ? "bg-stone-950 text-white"
-            : "border border-stone-300 text-stone-700 hover:border-stone-950 hover:text-stone-950",
-        ].join(" ")
-      }
-      to={to}
-    >
-      {children}
-    </NavLink>
   );
 }
