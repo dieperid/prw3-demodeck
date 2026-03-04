@@ -10,10 +10,12 @@ import {
   ScrollRestoration,
   useLoaderData,
 } from "react-router";
+import { Provider } from "react-redux";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { destroyAuthCookie, isAuthenticated } from "~/lib/auth.server";
+import { store } from "./config/store";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -54,7 +56,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <Provider store={store}>{children}</Provider>
         <ScrollRestoration />
         <Scripts />
       </body>
