@@ -7,9 +7,13 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  min-height: 100%;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+body {
+  @apply m-0 bg-stone-100 text-stone-950 antialiased;
+}
+
+code {
+  @apply rounded bg-stone-200 px-1 py-0.5 text-[0.95em];
 }
