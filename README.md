@@ -1,87 +1,109 @@
-# Welcome to React Router!
+# prw3 DemoDeck
 
-A modern, production-ready template for building full-stack React applications using React Router.
+A full-stack React application designed for showcasing and exploring developer projects. Users can browse a gallery of projects, filter by technologies, view author profiles, and register/login to publish their own work.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Built with **React 19**, **React Router 7**, **Redux Toolkit**, and **Tailwind CSS v4**.
 
-## Features
+## Prerequisites
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+To run this project, ensure you have the following installed:
+
+- **Node.js**
+- **npm**
+- **Docker** (Optional)
 
 ## Getting Started
 
-### Installation
+### Locally
 
-Install the dependencies:
+1. **Clone the repository**:
+
+```bash
+    git clone https://github.com/dieperid/prw3-demodeck.git
+    cd prw3-demodeck
+```
+
+2. **Install dependencies**:
 
 ```bash
 npm install
+
 ```
 
-### Development
+3. **Configure Environment Variables**:
+   Copy the .env.example file and modify the variables as needed:
 
-Start the development server with HMR:
+```bash
+cp .env.example .env
+```
+
+This is what the .env file should contain:
+
+```env
+BACKEND_API_URL=http://localhost:8080/api
+SESSION_SECRET=your_super_secret_session_key
+```
+
+- `BACKEND_API_URL`: The url of the backend service of this website
+- `SESSION_SECRET`: String used to sign the session cookie
+
+4. **Start the development server**:
 
 ```bash
 npm run dev
+
 ```
 
-Your application will be available at `http://localhost:5173`.
+The application will be available at `http://localhost:5173`.
 
-## Building for Production
+### With Docker
 
-Create a production build:
+The project includes a multi-stage `Dockerfile` optimized for production, but it can also be used to run the app locally in an isolated environment.
+
+1. **Build the Docker image**:
 
 ```bash
-npm run build
+docker build -t demodeck:latest .
 ```
 
-## Deployment
+2. **Configure Environment Variables**:
 
-### Docker Deployment
+See step 3 of the local setup for more details.
 
-To build and run using Docker:
+3. **Run the container**:
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
+docker run -p 3000:3000 --env-file .env demodeck:latest
 
 ```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+
+The application will be accessible at `http://localhost:3000`.
+
+## Project Architecture
+
+The `app/` directory is structured as follows:
+
+```text
+app/
+├── components/
+├── config/          # Global configuration (e.g., Redux store setup, typed ENV vars)
+├── data/            # Local mock data and fake API fetchers
+├── helpers/
+├── lib/             # Application infrastructure (e.g., Session management, utilities)
+├── routes/
+├── services/
+└── state/           # Global state slices (Redux Toolkit)
 ```
 
-## Styling
+Other files and folders outside of `app/` are the default `react-router` scaffold.
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+## Conventions
 
----
+This project uses the following conventions for git:
 
-Built with ❤️ using React Router.
+- [Conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
+- [Conventional branch](https://conventional-branch.github.io/)
+
+## Project collaboration
+
+This project uses `GitHub Issues`, `Pull Requests` and `GitHub Projects` for collaboration.
