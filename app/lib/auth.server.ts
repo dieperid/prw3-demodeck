@@ -106,7 +106,20 @@ export async function getAuthSession(request: Request): Promise<AuthSession | nu
   const session = await getSession(request.headers.get("Cookie"));
   const authSession = session.get(AUTH_SESSION_KEY);
 
-  return isAuthSession(authSession) ? authSession : null;
+  if (!isAuthSession(authSession)) {
+    return null;
+  }
+
+  const user = await fetchCurrentUser(authSession.token);
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...authSession,
+    user,
+  };
 }
 
 export async function getAuthenticatedUser(
@@ -160,6 +173,33 @@ async function normalizeAuthSession(payload: unknown): Promise<AuthSession | nul
     token,
     user,
   };
+}
+
+async function fetchCurrentUser(token: string): Promise<AuthenticatedUser | null> {
+  let response: Response;
+
+  try {
+    response = await fetchBackend("/api/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    throw new Error("Unable to reach the backend user API.");
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Unable to load the authenticated user from the backend.");
+  }
+
+  const payload = await readJson<unknown>(response);
+  const payloadRecord = asRecord(payload);
+
+  return normalizeUser(payloadRecord?.user) ?? normalizeUser(payload);
 }
 
 function normalizeUser(value: unknown): AuthenticatedUser | null {
