@@ -39,11 +39,11 @@ cp .env.example .env
 This is what the .env file should contain:
 
 ```env
-BACKEND_API_URL=http://localhost:8080/api
+BACKEND_API_URL=http://localhost:3000
 SESSION_SECRET=your_super_secret_session_key
 ```
 
-- `BACKEND_API_URL`: The url of the backend service of this website
+- `BACKEND_API_URL`: Base URL of the backend service. Do not append `/api` because the app already requests `/api/...`.
 - `SESSION_SECRET`: String used to sign the session cookie
 
 4. **Start the development server**:
