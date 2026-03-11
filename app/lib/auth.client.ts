@@ -28,7 +28,14 @@ export function getStoredAuthSession() {
   }
 
   try {
-    return JSON.parse(rawSession) as StoredAuthSession;
+    const parsedSession = JSON.parse(rawSession);
+
+    if (!isStoredAuthSession(parsedSession)) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
+    }
+
+    return parsedSession;
   } catch {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     return null;
@@ -41,4 +48,26 @@ export function clearStoredAuthSession() {
   }
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function isStoredAuthSession(value: unknown): value is StoredAuthSession {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const session = value as Record<string, unknown>;
+  const user =
+    session.user && typeof session.user === "object" && !Array.isArray(session.user)
+      ? (session.user as Record<string, unknown>)
+      : null;
+
+  return (
+    typeof session.token === "string" &&
+    session.token.length > 0 &&
+    user !== null &&
+    typeof user.id === "string" &&
+    user.id.length > 0 &&
+    typeof user.name === "string" &&
+    user.name.length > 0
+  );
 }
