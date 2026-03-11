@@ -1,9 +1,9 @@
 import { Link } from "react-router";
 
-import type { DemoProjectWithAuthor } from "~/data/fakeData";
+import type { ProjectWithAuthor } from "~/lib/projects";
 
 type ProjectCardProps = {
-  project: DemoProjectWithAuthor;
+  project: ProjectWithAuthor;
   viewMode?: "gallery" | "list";
 };
 
