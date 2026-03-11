@@ -1,4 +1,4 @@
-import { Form, Link, useNavigation } from "react-router";
+import { Form, Link, useLocation, useNavigation } from "react-router";
 
 interface AuthScreenProps {
   title: string;
@@ -21,9 +21,16 @@ export function AuthScreen({
   errors,
   defaultValues,
 }: AuthScreenProps) {
+  const location = useLocation();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const isRegistration = mode === "register";
+  const redirectTo =
+    new URLSearchParams(location.search).get("redirectTo") ?? "/";
+  const alternatePath =
+    redirectTo === "/"
+      ? alternateHref
+      : `${alternateHref}?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
     <div className="mx-auto max-w-md mt-12 rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -39,7 +46,7 @@ export function AuthScreen({
 
       <Form method="post" className="space-y-4">
         {/* Hidden field to handle redirection after success */}
-        <input type="hidden" name="redirectTo" value="/" />
+        <input type="hidden" name="redirectTo" value={redirectTo} />
 
         {isRegistration && (
           <div className="space-y-2">
@@ -108,7 +115,7 @@ export function AuthScreen({
       <div className="mt-6 text-center text-sm text-stone-600">
         {alternatePrompt}{" "}
         <Link
-          to={alternateHref}
+          to={alternatePath}
           className="font-medium text-stone-950 hover:underline"
         >
           {alternateLabel}
