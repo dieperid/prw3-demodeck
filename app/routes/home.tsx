@@ -23,11 +23,14 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "likes">("date");
   const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const projects = getAllProjects()
     .filter((project) => {
       if (!normalizedQuery) {
-        return true;
+        return selectedTags.length === 0
+          ? true
+          : selectedTags.some((tag) => project.techTags.includes(tag));
       }
 
       const searchableText = [
@@ -40,7 +43,13 @@ export default function Home() {
         .join(" ")
         .toLowerCase();
 
-      return searchableText.includes(normalizedQuery);
+      const matchesSearch = searchableText.includes(normalizedQuery);
+      const matchesTags =
+        selectedTags.length === 0
+          ? true
+          : selectedTags.some((tag) => project.techTags.includes(tag));
+
+      return matchesSearch && matchesTags;
     })
     .sort((a, b) => {
       if (sortBy === "likes") {
@@ -67,7 +76,17 @@ export default function Home() {
 
       <section className="space-y-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <TagFilters tags={featuredTags} />
+          <TagFilters
+            onToggleTag={(tag) =>
+              setSelectedTags((currentTags) =>
+                currentTags.includes(tag)
+                  ? currentTags.filter((currentTag) => currentTag !== tag)
+                  : [...currentTags, tag]
+              )
+            }
+            selectedTags={selectedTags}
+            tags={featuredTags}
+          />
           <ViewModeToggle onChange={setViewMode} value={viewMode} />
         </div>
       </section>
