@@ -1,21 +1,22 @@
 import { data, redirect, useActionData } from "react-router";
+import type { Route } from "./+types/register";
 
-import type { Route } from "./+types/login";
+import { validateRegistrationData } from "~/helpers/auth/validation";
 import { AuthScreen } from "~/components/AuthScreen";
 import {
   authenticateUser,
   createAuthCookie,
   getSafeRedirectPath,
   isAuthenticated,
+  registerUser,
 } from "~/lib/auth.server";
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: "Login | DemoDeck" },
+    { title: "Register | DemoDeck" },
     {
       name: "description",
-      content:
-        "User login screen for DemoDeck, with email and password fields.",
+      content: "Creation de compte pour acceder aux routes protegees.",
     },
   ];
 }
@@ -24,36 +25,38 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (await isAuthenticated(request)) {
     throw redirect("/");
   }
-
   return null;
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const redirectTo = getSafeRedirectPath(formData.get("redirectTo"));
-  const username = String(formData.get("username") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
 
-  if (!username || !password) {
+  const { isValid, errors, payload } = validateRegistrationData(formData);
+
+  if (!isValid) {
     return data(
       {
-        defaultValues: { username },
-        errors: { form: "Username and password are required." },
+        errors,
+        defaultValues: { username: payload.username, name: payload.name },
       },
       { status: 400 },
     );
   }
 
   try {
-    const session = await authenticateUser(username, password);
+    await registerUser(payload);
+    const session = await authenticateUser(payload.username, payload.password);
 
     if (!session) {
       return data(
         {
-          defaultValues: { username },
-          errors: { form: "Invalid credentials. Try alice / demo-alice." },
+          errors: {
+            form: "Account created, but automatic login failed. Please sign in.",
+          },
+          defaultValues: { username: payload.username, name: payload.name },
         },
-        { status: 401 },
+        { status: 502 },
       );
     }
 
@@ -65,32 +68,32 @@ export async function action({ request }: Route.ActionArgs) {
   } catch (error) {
     return data(
       {
-        defaultValues: { username },
         errors: {
           form:
             error instanceof Error
               ? error.message
               : "An unexpected error occurred.",
         },
+        defaultValues: { username: payload.username, name: payload.name },
       },
-      { status: 502 },
+      { status: 400 },
     );
   }
 }
 
-export default function Login() {
+export default function Register() {
   const actionData = useActionData<typeof action>();
 
   return (
     <AuthScreen
-      alternateHref="/register"
-      alternateLabel="Create account"
-      alternatePrompt="No account yet?"
-      defaultValues={actionData?.defaultValues}
+      alternateHref="/login"
+      alternateLabel="Sign in"
+      alternatePrompt="Already registered?"
+      mode="register"
+      submitLabel="Create account"
+      title="Registration"
       errors={actionData?.errors}
-      mode="login"
-      submitLabel="Log in"
-      title="Login"
+      defaultValues={actionData?.defaultValues}
     />
   );
 }

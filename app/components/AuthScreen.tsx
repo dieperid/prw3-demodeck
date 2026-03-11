@@ -1,143 +1,126 @@
-import { useEffect } from "react";
-import {
-  Form,
-  Link,
-  useFetcher,
-  useNavigate,
-  useNavigation,
-  useSearchParams,
-} from "react-router";
+import { Form, Link, useLocation, useNavigation } from "react-router";
 
-import { useAppDispatch } from "~/config/hooks";
-import {
-  clearStoredAuthSession,
-  saveAuthSession,
-  type StoredAuthSession,
-} from "~/lib/auth.client";
-import { setCredentials, setLoading } from "~/state/auth/authSlice";
-
-type AuthScreenProps = {
+interface AuthScreenProps {
   title: string;
   submitLabel: string;
+  alternatePrompt: string;
   alternateLabel: string;
   alternateHref: string;
-  alternatePrompt: string;
-  enableClientAuth?: boolean;
-};
+  mode: "login" | "register";
+  errors?: Record<string, string>;
+  defaultValues?: Record<string, string>;
+}
 
 export function AuthScreen({
   title,
   submitLabel,
+  alternatePrompt,
   alternateLabel,
   alternateHref,
-  alternatePrompt,
-  enableClientAuth = false,
+  mode,
+  errors,
+  defaultValues,
 }: AuthScreenProps) {
-  const dispatch = useAppDispatch();
-  const fetcher = useFetcher<{
-    error?: string;
-    redirectTo?: string;
-    success?: boolean;
-    token?: string;
-    user?: StoredAuthSession["user"];
-  }>();
-  const navigate = useNavigate();
+  const location = useLocation();
   const navigation = useNavigation();
-  const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
-  const FormComponent = enableClientAuth ? fetcher.Form : Form;
-  const isSubmitting = enableClientAuth
-    ? fetcher.state !== "idle"
-    : navigation.state === "submitting";
-  const errorMessage = enableClientAuth ? fetcher.data?.error : null;
-
-  useEffect(() => {
-    if (!enableClientAuth) {
-      return;
-    }
-
-    dispatch(setLoading(isSubmitting));
-  }, [dispatch, enableClientAuth, isSubmitting]);
-
-  useEffect(() => {
-    if (!enableClientAuth || !fetcher.data?.success) {
-      return;
-    }
-
-    if (!fetcher.data.token || !fetcher.data.user || !fetcher.data.redirectTo) {
-      clearStoredAuthSession();
-      return;
-    }
-
-    saveAuthSession({
-      token: fetcher.data.token,
-      user: fetcher.data.user,
-    });
-    dispatch(
-      setCredentials({
-        id: fetcher.data.user.id,
-        name: fetcher.data.user.name,
-        token: fetcher.data.token,
-      }),
-    );
-    navigate(fetcher.data.redirectTo);
-  }, [dispatch, enableClientAuth, fetcher.data, navigate]);
+  const isSubmitting = navigation.state === "submitting";
+  const isRegistration = mode === "register";
+  const redirectTo =
+    new URLSearchParams(location.search).get("redirectTo") ?? "/";
+  const alternatePath =
+    redirectTo === "/"
+      ? alternateHref
+      : `${alternateHref}?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <section className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-3xl border border-stone-200 bg-stone-950 p-8 text-stone-50 shadow-sm">
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">{title}</h1>
-      </div>
+    <div className="mx-auto max-w-md mt-12 rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
+      <h1 className="mb-6 text-3xl font-semibold tracking-tight text-stone-950">
+        {title}
+      </h1>
 
-      <div className="rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
-        <FormComponent className="space-y-5" method="post">
-          <input name="redirectTo" type="hidden" value={redirectTo} />
+      {errors?.form && (
+        <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm text-red-600 border border-red-100">
+          {errors.form}
+        </div>
+      )}
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Username</span>
+      <Form method="post" className="space-y-4">
+        {/* Hidden field to handle redirection after success */}
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+
+        {isRegistration && (
+          <div className="space-y-2">
+            <label htmlFor="name" className="text-sm font-medium text-stone-700">
+              Name
+            </label>
             <input
-              className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-              defaultValue="alice"
-              name="identifier"
+              id="name"
+              name="name"
               type="text"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Password</span>
-            <input
+              defaultValue={defaultValues?.name}
               className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-              defaultValue="demo-alice"
-              name="password"
-              type="password"
             />
+            {errors?.name && (
+              <p className="text-sm text-red-600">{errors.name}</p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <label
+            htmlFor="username"
+            className="text-sm font-medium text-stone-700"
+          >
+            Username
           </label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            defaultValue={defaultValues?.username}
+            className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
+          />
+          {errors?.username && (
+            <p className="text-sm text-red-600">{errors.username}</p>
+          )}
+        </div>
 
-          {errorMessage ? (
-            <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {errorMessage}
-            </p>
-          ) : null}
-
-          <button
-            className="w-full rounded-2xl bg-stone-950 px-5 py-3 font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-500"
-            disabled={isSubmitting}
-            type="submit"
+        <div className="space-y-2">
+          <label
+            htmlFor="password"
+            className="text-sm font-medium text-stone-700"
           >
-            {isSubmitting ? "Processing..." : submitLabel}
-          </button>
-        </FormComponent>
+            Password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
+          />
+          {errors?.password && (
+            <p className="text-sm text-red-600">{errors.password}</p>
+          )}
+        </div>
 
-        <p className="mt-6 text-sm text-stone-600">
-          {alternatePrompt}{" "}
-          <Link
-            className="font-medium text-stone-950 underline underline-offset-4"
-            to={alternateHref}
-          >
-            {alternateLabel}
-          </Link>
-        </p>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="mt-2 w-full rounded-full bg-stone-950 px-4 py-3 font-medium text-white transition hover:bg-stone-800 disabled:opacity-70"
+        >
+          {isSubmitting ? "Processing..." : submitLabel}
+        </button>
+      </Form>
+
+      <div className="mt-6 text-center text-sm text-stone-600">
+        {alternatePrompt}{" "}
+        <Link
+          to={alternatePath}
+          className="font-medium text-stone-950 hover:underline"
+        >
+          {alternateLabel}
+        </Link>
       </div>
-    </section>
+    </div>
   );
 }

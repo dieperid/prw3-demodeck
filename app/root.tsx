@@ -14,8 +14,10 @@ import { Provider } from "react-redux";
 import type { Route } from "./+types/root";
 import "./app.css";
 import { useAppDispatch } from "~/config/hooks";
-import { clearStoredAuthSession, getStoredAuthSession } from "~/lib/auth.client";
-import { destroyAuthCookie, isAuthenticated } from "~/lib/auth.server";
+import {
+  destroyAuthCookie,
+  getAuthSession,
+} from "~/lib/auth.server";
 import { logout, setCredentials } from "~/state/auth/authSlice";
 import { store } from "./config/store";
 import { Navbar } from "./components/Navbar";
@@ -34,7 +36,12 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return { isAuthenticated: await isAuthenticated(request) };
+  const authSession = await getAuthSession(request);
+
+  return {
+    isAuthenticated: authSession !== null,
+    user: authSession?.user ?? null,
+  };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -42,7 +49,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (formData.get("_intent") === "logout") {
     return redirect("/", {
-      headers: { "Set-Cookie": destroyAuthCookie() },
+      headers: { "Set-Cookie": await destroyAuthCookie(request) },
     });
   }
 
@@ -68,30 +75,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isAuthenticated } = useLoaderData<typeof loader>();
+  const { isAuthenticated, user } = useLoaderData<typeof loader>();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      clearStoredAuthSession();
+    if (!isAuthenticated || !user) {
       dispatch(logout());
-      return;
-    }
-
-    const session = getStoredAuthSession();
-
-    if (!session) {
       return;
     }
 
     dispatch(
       setCredentials({
-        id: session.user.id,
-        name: session.user.name,
-        token: session.token,
+        id: user.id,
+        name: user.name,
+        token: null,
       }),
     );
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, user]);
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">

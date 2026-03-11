@@ -5,15 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="38aab75a-64ac-45af-bc0d-fa5ac6bf0152" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/material_theme_project_new.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/lib/auth.client.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/lib/backend.server.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/lib/projects.server.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/lib/projects.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/routes/auth/login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/components/AuthScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AuthScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/components/ProjectCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/ProjectCard.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/components/ProjectList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/ProjectList.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/lib/auth.server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/lib/auth.server.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/root.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/root.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/auth/login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/auth/login.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/home.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/projects/projectDetail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/projects/projectDetail.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/state/auth/authSlice.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/state/auth/authSlice.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/state/auth/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/state/auth/types.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +74,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "feature/login-page",
+    "git-widget-placeholder": "Merging feature/registration",
     "javascript.preferred.runtime.type.id": "node",
     "last_opened_file_path": "/Users/julienschneider/Desktop/cpnv/S7/PRW3/prw3-demodeck",
     "node.js.detected.package.eslint": "true",

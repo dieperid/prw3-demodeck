@@ -12,11 +12,12 @@ export async function fetchBackend(
 ) {
   const url = new URL(path, getBackendApiUrl());
   const headers = new Headers(init.headers);
-
+  
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
 
+  
   return fetch(url, {
     ...init,
     headers,
