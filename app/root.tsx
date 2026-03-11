@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -12,7 +13,10 @@ import { Provider } from "react-redux";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useAppDispatch } from "~/config/hooks";
+import { clearStoredAuthSession, getStoredAuthSession } from "~/lib/auth.client";
 import { destroyAuthCookie, isAuthenticated } from "~/lib/auth.server";
+import { logout, setCredentials } from "~/state/auth/authSlice";
 import { store } from "./config/store";
 import { Navbar } from "./components/Navbar";
 
@@ -65,6 +69,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { isAuthenticated } = useLoaderData<typeof loader>();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      clearStoredAuthSession();
+      dispatch(logout());
+      return;
+    }
+
+    const session = getStoredAuthSession();
+
+    if (!session) {
+      return;
+    }
+
+    dispatch(
+      setCredentials({
+        id: session.user.id,
+        name: session.user.name,
+        token: session.token,
+      }),
+    );
+  }, [dispatch, isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">
