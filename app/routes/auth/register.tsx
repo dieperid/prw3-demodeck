@@ -71,7 +71,7 @@ export default function Register() {
       alternateLabel="Sign in"
       alternatePrompt="Already registered?"
       submitLabel="Create account"
-      title="Inscription"
+      title="Registration"
       errors={actionData?.errors}
       defaultValues={actionData?.defaultValues}
     />
