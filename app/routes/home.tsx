@@ -1,4 +1,5 @@
 import type { Route } from "./+types/home";
+import { useState } from "react";
 import { ProjectCard } from "~/components/ProjectCard";
 import { getAllProjects } from "~/data/fakeApiFetch";
 
@@ -15,7 +16,14 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const projects = getAllProjects();
+  const [sortBy, setSortBy] = useState<"date" | "likes">("date");
+  const projects = [...getAllProjects()].sort((a, b) => {
+    if (sortBy === "likes") {
+      return b.likes - a.likes;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <section className="space-y-8">
@@ -39,9 +47,15 @@ export default function Home() {
 
         <label className="space-y-2">
           <span className="text-sm font-medium text-stone-700">Sort</span>
-          <select className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950">
-            <option>Date</option>
-            <option>Likes</option>
+          <select
+            className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
+            onChange={(event) =>
+              setSortBy(event.target.value as "date" | "likes")
+            }
+            value={sortBy}
+          >
+            <option value="date">Date</option>
+            <option value="likes">Likes</option>
           </select>
         </label>
       </section>
