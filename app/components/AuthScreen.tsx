@@ -6,6 +6,7 @@ interface AuthScreenProps {
   alternatePrompt: string;
   alternateLabel: string;
   alternateHref: string;
+  mode: "login" | "register";
   errors?: Record<string, string>;
   defaultValues?: Record<string, string>;
 }
@@ -16,11 +17,13 @@ export function AuthScreen({
   alternatePrompt,
   alternateLabel,
   alternateHref,
+  mode,
   errors,
   defaultValues,
 }: AuthScreenProps) {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const isRegistration = mode === "register";
 
   return (
     <div className="mx-auto max-w-md mt-12 rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -38,21 +41,23 @@ export function AuthScreen({
         {/* Hidden field to handle redirection after success */}
         <input type="hidden" name="redirectTo" value="/" />
 
-        <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium text-stone-700">
-            Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            defaultValue={defaultValues?.name}
-            className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-          />
-          {errors?.name && (
-            <p className="text-sm text-red-600">{errors.name}</p>
-          )}
-        </div>
+        {isRegistration && (
+          <div className="space-y-2">
+            <label htmlFor="name" className="text-sm font-medium text-stone-700">
+              Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              defaultValue={defaultValues?.name}
+              className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
+            />
+            {errors?.name && (
+              <p className="text-sm text-red-600">{errors.name}</p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <label

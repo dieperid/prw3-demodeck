@@ -1,4 +1,4 @@
-import { redirect } from "react-router";
+import { data, redirect, useActionData } from "react-router";
 
 import type { Route } from "./+types/login";
 import { AuthScreen } from "~/components/AuthScreen";
@@ -31,48 +31,64 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const redirectTo = getSafeRedirectPath(formData.get("redirectTo"));
-  const identifier = String(formData.get("identifier") ?? "");
+  const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const session = await authenticateUser(identifier, password);
 
-  if (!session) {
-    return new Response(
-      JSON.stringify({
-        error: "Invalid credentials. Try alice / demo-alice.",
-        success: false,
-      }),
+  if (!username || !password) {
+    return data(
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 401,
+        defaultValues: { username },
+        errors: { form: "Username and password are required." },
       },
+      { status: 400 },
     );
   }
 
-  return new Response(
-    JSON.stringify({
-      redirectTo,
-      success: true,
-      token: session.token,
-      user: session.user,
-    }),
-    {
-      headers: {
-        "Content-Type": "application/json",
-        "Set-Cookie": createAuthCookie(session.token),
+  try {
+    const session = await authenticateUser(username, password);
+
+    if (!session) {
+      return data(
+        {
+          defaultValues: { username },
+          errors: { form: "Invalid credentials. Try alice / demo-alice." },
+        },
+        { status: 401 },
+      );
+    }
+
+    const cookieHeader = await createAuthCookie(request, session);
+
+    return redirect(redirectTo, {
+      headers: { "Set-Cookie": cookieHeader },
+    });
+  } catch (error) {
+    return data(
+      {
+        defaultValues: { username },
+        errors: {
+          form:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred.",
+        },
       },
-    },
-  );
+      { status: 502 },
+    );
+  }
 }
 
 export default function Login() {
+  const actionData = useActionData<typeof action>();
+
   return (
     <AuthScreen
       alternateHref="/register"
       alternateLabel="Create account"
       alternatePrompt="No account yet?"
-      enableClientAuth
+      defaultValues={actionData?.defaultValues}
+      errors={actionData?.errors}
+      mode="login"
       submitLabel="Log in"
       title="Login"
     />

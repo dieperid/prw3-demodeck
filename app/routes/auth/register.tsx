@@ -2,12 +2,13 @@ import { data, redirect, useActionData } from "react-router";
 import type { Route } from "./+types/register";
 
 import { validateRegistrationData } from "~/helpers/auth/validation";
-import { registerUserApi } from "~/services/auth.server";
 import { AuthScreen } from "~/components/AuthScreen";
 import {
+  authenticateUser,
   createAuthCookie,
   getSafeRedirectPath,
   isAuthenticated,
+  registerUser,
 } from "~/lib/auth.server";
 
 export function meta(_args: Route.MetaArgs) {
@@ -44,17 +45,35 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const user = await registerUserApi(payload);
+    await registerUser(payload);
+    const session = await authenticateUser(payload.username, payload.password);
 
-    const cookieHeader = await createAuthCookie(request, user.id);
+    if (!session) {
+      return data(
+        {
+          errors: {
+            form: "Account created, but automatic login failed. Please sign in.",
+          },
+          defaultValues: { username: payload.username, name: payload.name },
+        },
+        { status: 502 },
+      );
+    }
+
+    const cookieHeader = await createAuthCookie(request, session);
 
     return redirect(redirectTo, {
       headers: { "Set-Cookie": cookieHeader },
     });
-  } catch (error: any) {
+  } catch (error) {
     return data(
       {
-        errors: { form: error.message || "An unexpected error occurred." },
+        errors: {
+          form:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred.",
+        },
         defaultValues: { username: payload.username, name: payload.name },
       },
       { status: 400 },
@@ -70,6 +89,7 @@ export default function Register() {
       alternateHref="/login"
       alternateLabel="Sign in"
       alternatePrompt="Already registered?"
+      mode="register"
       submitLabel="Create account"
       title="Registration"
       errors={actionData?.errors}
