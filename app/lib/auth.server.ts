@@ -149,7 +149,7 @@ async function normalizeAuthSession(payload: unknown): Promise<AuthSession | nul
     return null;
   }
 
-  const user = normalizeUser(record?.user) ?? (await fetchCurrentUser(token));
+  const user = normalizeUser(record?.user);
 
   if (!user) {
     return null;
@@ -160,27 +160,6 @@ async function normalizeAuthSession(payload: unknown): Promise<AuthSession | nul
     token,
     user,
   };
-}
-
-async function fetchCurrentUser(token: string): Promise<AuthenticatedUser | null> {
-  let response: Response;
-
-  try {
-    response = await fetchBackend("/api/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  } catch {
-    throw new Error("Unable to reach the backend user API.");
-  }
-
-  if (!response.ok) {
-    throw new Error("Unable to load the authenticated user from the backend.");
-  }
-
-  const payload = await readJson<unknown>(response);
-  return normalizeUser(payload);
 }
 
 function normalizeUser(value: unknown): AuthenticatedUser | null {
