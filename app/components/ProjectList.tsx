@@ -1,8 +1,8 @@
 import { ProjectCard } from "~/components/ProjectCard";
-import type { DemoProjectWithAuthor } from "~/data/fakeData";
+import type { ProjectWithAuthor } from "~/lib/projects";
 
 type ProjectListProps = {
-  projects: DemoProjectWithAuthor[];
+  projects: ProjectWithAuthor[];
   viewMode: "gallery" | "list";
 };
 

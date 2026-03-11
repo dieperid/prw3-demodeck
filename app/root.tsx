@@ -34,7 +34,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return { isAuthenticated: isAuthenticated(request) };
+  return { isAuthenticated: await isAuthenticated(request) };
 }
 
 export async function action({ request }: Route.ActionArgs) {
