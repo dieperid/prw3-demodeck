@@ -16,14 +16,34 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "likes">("date");
-  const projects = [...getAllProjects()].sort((a, b) => {
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const projects = getAllProjects()
+    .filter((project) => {
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const searchableText = [
+        project.title,
+        project.summary,
+        project.author.name,
+        project.author.username,
+        ...project.techTags,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedQuery);
+    })
+    .sort((a, b) => {
     if (sortBy === "likes") {
       return b.likes - a.likes;
     }
 
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+    });
 
   return (
     <section className="space-y-8">
@@ -40,8 +60,10 @@ export default function Home() {
           <span className="text-sm font-medium text-stone-700">Search</span>
           <input
             className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
+            onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Title, tech, author..."
             type="search"
+            value={searchQuery}
           />
         </label>
 
@@ -75,9 +97,15 @@ export default function Home() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
+        {projects.length > 0 ? (
+          projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))
+        ) : (
+          <p className="rounded-3xl border border-dashed border-stone-300 bg-white p-6 text-stone-600 md:col-span-2">
+            No projects match your search.
+          </p>
+        )}
       </section>
     </section>
   );
