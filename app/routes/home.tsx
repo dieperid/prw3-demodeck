@@ -1,5 +1,10 @@
 import type { Route } from "./+types/home";
-import { ProjectCard } from "~/components/ProjectCard";
+import { useState } from "react";
+import { ProjectList } from "~/components/ProjectList";
+import { SearchInput } from "~/components/SearchInput";
+import { SortSelect } from "~/components/SortSelect";
+import { TagFilters } from "~/components/TagFilters";
+import { ViewModeToggle } from "~/components/ViewModeToggle";
 import { getAllProjects } from "~/data/fakeApiFetch";
 
 const featuredTags = ["React", "TypeScript", "Node.js", "MySQL", "UI"];
@@ -15,7 +20,44 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const projects = getAllProjects();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "likes">("date");
+  const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const projects = getAllProjects()
+    .filter((project) => {
+      if (!normalizedQuery) {
+        return selectedTags.length === 0
+          ? true
+          : selectedTags.some((tag) => project.techTags.includes(tag));
+      }
+
+      const searchableText = [
+        project.title,
+        project.summary,
+        project.author.name,
+        project.author.username,
+        ...project.techTags,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = searchableText.includes(normalizedQuery);
+      const matchesTags =
+        selectedTags.length === 0
+          ? true
+          : selectedTags.some((tag) => project.techTags.includes(tag));
+
+      return matchesSearch && matchesTags;
+    })
+    .sort((a, b) => {
+      if (sortBy === "likes") {
+        return b.likes - a.likes;
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   return (
     <section className="space-y-8">
@@ -28,42 +70,33 @@ export default function Home() {
       </header>
 
       <section className="grid gap-4 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm md:grid-cols-2">
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-stone-700">Search</span>
-          <input
-            className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-            placeholder="Title, tech, author..."
-            type="search"
-          />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-stone-700">Sort</span>
-          <select className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950">
-            <option>Date</option>
-            <option>Likes</option>
-          </select>
-        </label>
+        <SearchInput onChange={setSearchQuery} value={searchQuery} />
+        <SortSelect onChange={setSortBy} value={sortBy} />
       </section>
 
       <section className="space-y-3">
-        <p className="text-sm font-medium text-stone-700">Tags filters</p>
-        <div className="flex flex-wrap gap-2">
-          {featuredTags.map((tag) => (
-            <span
-              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm text-stone-700"
-              key={tag}
-            >
-              {tag}
-            </span>
-          ))}
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <TagFilters
+            onToggleTag={(tag) =>
+              setSelectedTags((currentTags) =>
+                currentTags.includes(tag)
+                  ? currentTags.filter((currentTag) => currentTag !== tag)
+                  : [...currentTags, tag]
+              )
+            }
+            selectedTags={selectedTags}
+            tags={featuredTags}
+          />
+          <ViewModeToggle onChange={setViewMode} value={viewMode} />
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
+      <section
+        className={
+          viewMode === "gallery" ? "grid gap-4 md:grid-cols-2" : "space-y-4"
+        }
+      >
+        <ProjectList projects={projects} viewMode={viewMode} />
       </section>
     </section>
   );
