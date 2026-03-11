@@ -27,7 +27,6 @@ To run this project, ensure you have the following installed:
 
 ```bash
 npm install
-
 ```
 
 3. **Configure Environment Variables**:
@@ -51,12 +50,11 @@ SESSION_SECRET=your_super_secret_session_key
 
 ```bash
 npm run dev
-
 ```
 
 The application will be available at `http://localhost:5173`.
 
-### With Docker
+## Building for Production
 
 The project includes a multi-stage `Dockerfile` optimized for production, but it can also be used to run the app locally in an isolated environment.
 

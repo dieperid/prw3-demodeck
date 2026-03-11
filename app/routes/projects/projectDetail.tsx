@@ -1,7 +1,7 @@
 import { Link, useLoaderData } from "react-router";
 
 import type { Route } from "./+types/projectDetail";
-import { getProjectById } from "~/data/fakeApiFetch";
+import { getProjectById } from "~/lib/projects.server";
 
 export function meta({ data }: Route.MetaArgs) {
   return [
@@ -18,8 +18,8 @@ export function meta({ data }: Route.MetaArgs) {
   ];
 }
 
-export function loader({ params }: Route.LoaderArgs) {
-  const project = getProjectById(params.id);
+export async function loader({ params }: Route.LoaderArgs) {
+  const project = await getProjectById(params.id);
 
   if (!project) {
     throw new Response("Project not found", { status: 404 });
