@@ -1,7 +1,7 @@
 import { data, redirect, useActionData } from "react-router";
 import type { Route } from "./+types/register";
 
-import { validateRegistrationData } from "~/helper/auth/validation";
+import { validateRegistrationData } from "~/helpers/auth/validation";
 import { registerUserApi } from "~/services/auth.server";
 import { AuthScreen } from "~/components/AuthScreen";
 import {

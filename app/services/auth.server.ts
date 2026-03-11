@@ -1,5 +1,5 @@
 import { ENV } from "~/config/env.server";
-import type { RegisterPayload } from "~/helper/auth/validation";
+import type { RegisterPayload } from "~/helpers/auth/validation";
 
 export async function registerUserApi(
   payload: RegisterPayload,
