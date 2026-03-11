@@ -1,13 +1,12 @@
 import type { Route } from "./+types/home";
+import { useLoaderData } from "react-router";
 import { useState } from "react";
 import { ProjectList } from "~/components/ProjectList";
 import { SearchInput } from "~/components/SearchInput";
 import { SortSelect } from "~/components/SortSelect";
 import { TagFilters } from "~/components/TagFilters";
 import { ViewModeToggle } from "~/components/ViewModeToggle";
-import { getAllProjects } from "~/data/fakeApiFetch";
-
-const featuredTags = ["React", "TypeScript", "Node.js", "MySQL", "UI"];
+import { getAllProjects } from "~/lib/projects.server";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -19,13 +18,22 @@ export function meta(_args: Route.MetaArgs) {
   ];
 }
 
+export async function loader() {
+  const projects = await getAllProjects();
+
+  return {
+    projects,
+  };
+}
+
 export default function Home() {
+  const { projects: allProjects } = useLoaderData<typeof loader>();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "likes">("date");
   const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const projects = getAllProjects()
+  const projects = allProjects
     .filter((project) => {
       if (!normalizedQuery) {
         return selectedTags.length === 0
@@ -58,6 +66,7 @@ export default function Home() {
 
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+  const featuredTags = [...new Set(allProjects.flatMap((project) => project.techTags))];
 
   return (
     <section className="space-y-8">

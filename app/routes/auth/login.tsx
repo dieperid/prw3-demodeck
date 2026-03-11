@@ -21,7 +21,7 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  if (isAuthenticated(request)) {
+  if (await isAuthenticated(request)) {
     throw redirect("/");
   }
 
@@ -33,12 +33,12 @@ export async function action({ request }: Route.ActionArgs) {
   const redirectTo = getSafeRedirectPath(formData.get("redirectTo"));
   const identifier = String(formData.get("identifier") ?? "");
   const password = String(formData.get("password") ?? "");
-  const session = authenticateUser(identifier, password);
+  const session = await authenticateUser(identifier, password);
 
   if (!session) {
     return new Response(
       JSON.stringify({
-        error: "Invalid credentials. Try student / password.",
+        error: "Invalid credentials. Try alice / demo-alice.",
         success: false,
       }),
       {

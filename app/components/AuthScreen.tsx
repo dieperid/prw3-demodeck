@@ -94,10 +94,10 @@ export function AuthScreen({
           <input name="redirectTo" type="hidden" value={redirectTo} />
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Email</span>
+            <span className="text-sm font-medium text-stone-700">Username</span>
             <input
               className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-              defaultValue="student"
+              defaultValue="alice"
               name="identifier"
               type="text"
             />
@@ -107,7 +107,7 @@ export function AuthScreen({
             <span className="text-sm font-medium text-stone-700">Password</span>
             <input
               className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-stone-950"
-              defaultValue="password"
+              defaultValue="demo-alice"
               name="password"
               type="password"
             />

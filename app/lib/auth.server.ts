@@ -1,10 +1,6 @@
+import { asRecord, fetchBackend, readJson, readString } from "./backend.server";
+
 const SESSION_COOKIE_NAME = "demodeck_session";
-const DEMO_AUTH_USER = {
-  id: "student-1",
-  name: "Student Demo",
-  identifier: "student",
-  password: "password",
-};
 
 export type AuthUser = {
   id: string;
@@ -16,37 +12,54 @@ export type AuthSession = {
   user: AuthUser;
 };
 
-export function isAuthenticated(request: Request) {
-  const cookieHeader = request.headers.get("Cookie");
+export async function isAuthenticated(request: Request) {
+  const token = getAuthToken(request);
 
-  if (!cookieHeader) {
+  if (!token) {
     return false;
   }
 
-  return cookieHeader.split(";").some((cookie) => {
-    const [name, value] = cookie.trim().split("=");
-
-    return name === SESSION_COOKIE_NAME && Boolean(value);
-  });
+  const user = await getCurrentUser(token);
+  return user !== null;
 }
 
-export function authenticateUser(identifier: string, password: string) {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
+export async function authenticateUser(identifier: string, password: string) {
+  let response: Response;
 
-  if (
-    normalizedIdentifier !== DEMO_AUTH_USER.identifier ||
-    password !== DEMO_AUTH_USER.password
-  ) {
+  try {
+    response = await fetchBackend("/api/login", {
+      body: JSON.stringify({
+        username: identifier.trim(),
+        password,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+  } catch {
     return null;
   }
 
-  return {
-    token: createFakeJwt(DEMO_AUTH_USER.id),
-    user: {
-      id: DEMO_AUTH_USER.id,
-      name: DEMO_AUTH_USER.name,
-    },
-  } satisfies AuthSession;
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await readJson<unknown>(response);
+  const payloadRecord = asRecord(payload);
+  const token = readString(payloadRecord?.token);
+
+  if (!token) {
+    return null;
+  }
+
+  const user = parseAuthUser(payloadRecord?.user) ?? (await getCurrentUser(token));
+
+  if (!user) {
+    return null;
+  }
+
+  return { token, user } satisfies AuthSession;
 }
 
 export function createAuthCookie(token: string) {
@@ -69,6 +82,45 @@ export function destroyAuthCookie() {
   ].join("; ");
 }
 
+export function getAuthToken(request: Request) {
+  const cookieHeader = request.headers.get("Cookie");
+
+  if (!cookieHeader) {
+    return null;
+  }
+
+  for (const cookie of cookieHeader.split(";")) {
+    const [name, ...rawValue] = cookie.trim().split("=");
+
+    if (name === SESSION_COOKIE_NAME) {
+      return rawValue.join("=") || null;
+    }
+  }
+
+  return null;
+}
+
+export async function getCurrentUser(token: string) {
+  let response: Response;
+
+  try {
+    response = await fetchBackend("/api/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    return null;
+  }
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await readJson<unknown>(response);
+  return parseAuthUser(asRecord(payload)?.user ?? payload);
+}
+
 export function getSafeRedirectPath(
   target: FormDataEntryValue | string | null | undefined,
   fallback = "/",
@@ -84,23 +136,17 @@ export function getSafeRedirectPath(
   return target;
 }
 
-function createFakeJwt(subject: string) {
-  const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = toBase64Url(
-    JSON.stringify({
-      sub: subject,
-      iat: Math.floor(Date.now() / 1000),
-    }),
-  );
-  const signature = toBase64Url("demodeck-signature");
+function parseAuthUser(value: unknown) {
+  const user = asRecord(value);
+  const id = readString(user?.id) ?? readString(user?.userId);
+  const name =
+    readString(user?.name) ??
+    readString(user?.username) ??
+    readString(user?.email);
 
-  return `${header}.${payload}.${signature}`;
-}
+  if (!id || !name) {
+    return null;
+  }
 
-function toBase64Url(value: string) {
-  return Buffer.from(value)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return { id, name } satisfies AuthUser;
 }
