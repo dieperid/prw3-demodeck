@@ -108,6 +108,48 @@ export async function createProject(
   return createdProject;
 }
 
+export async function updateProject(
+  projectId: string | undefined,
+  project: CreateProjectInput,
+  token: string,
+) {
+  if (!projectId) {
+    throw new ProjectRequestError("Invalid project id.", 400);
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetchBackend(`/api/projects/${projectId}`, {
+      body: JSON.stringify(project),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      method: "PUT",
+    });
+  } catch {
+    throw new ProjectRequestError(
+      "Unable to reach the backend projects API.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ProjectRequestError(
+      await readBackendError(response, "Unable to update the project."),
+      response.status >= 400 ? response.status : 500,
+    );
+  }
+
+  const payload = await readJson<unknown>(response).catch(() => null);
+  const record = asRecord(payload);
+
+  return (
+    readString(record?.id) ?? readString(record?.projectId) ?? projectId
+  );
+}
+
 function normalizeProject(value: unknown) {
   const record = asRecord(value);
 
