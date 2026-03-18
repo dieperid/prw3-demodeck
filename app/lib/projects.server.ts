@@ -6,7 +6,7 @@ import {
   readString,
   readStringArray,
 } from "./backend.server";
-import type { ProjectWithAuthor } from "./projects";
+import type { ProjectComment, ProjectWithAuthor } from "./projects";
 
 type BackendProject = Record<string, unknown>;
 
@@ -62,8 +62,25 @@ export async function getProjectById(projectId: string | undefined) {
     return null;
   }
 
+  try {
+    const response = await fetchBackend(`/api/projects/${projectId}`);
+
+    if (response.ok) {
+      const payload = await readJson<unknown>(response);
+      const project = normalizeProject(payload);
+
+      if (project) {
+        return project;
+      }
+    } else if (response.status === 404) {
+      return null;
+    }
+  } catch {
+    // Fall back to the projects list endpoint when the detail endpoint is unavailable.
+  }
+
   const projects = await getAllProjects();
-  return projects.find((project) => project?.id === projectId) ?? null;
+  return projects.find((project) => project.id === projectId) ?? null;
 }
 
 export async function createProject(
@@ -224,6 +241,55 @@ export async function likeProject(
   );
 }
 
+export type CreateProjectCommentInput = {
+  text: string;
+  authorName?: string;
+};
+
+export async function createProjectComment(
+  projectId: string | undefined,
+  comment: CreateProjectCommentInput,
+  token?: string,
+) {
+  if (!projectId) {
+    throw new ProjectRequestError("Invalid project id.", 400);
+  }
+
+  let response: Response;
+
+  try {
+    const headers = new Headers({
+      "Content-Type": "application/json",
+    });
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    response = await fetchBackend(`/api/projects/${projectId}/comments`, {
+      body: JSON.stringify(comment),
+      headers,
+      method: "POST",
+    });
+  } catch {
+    throw new ProjectRequestError(
+      "Unable to reach the backend projects API.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ProjectRequestError(
+      await readBackendError(response, "Unable to add the comment."),
+      response.status >= 400 ? response.status : 500,
+    );
+  }
+
+  const payload = await readJson<unknown>(response).catch(() => null);
+
+  return normalizeComment(payload);
+}
+
 function normalizeProject(value: unknown) {
   const record = asRecord(value);
 
@@ -264,6 +330,7 @@ function normalizeProject(value: unknown) {
     readString(record.createdAt) ?? readString(record.created_at),
   );
   const author = normalizeAuthor(record);
+  const comments = normalizeComments(record.comments ?? record.projectComments);
 
   if (!id || !title || !author) {
     return null;
@@ -280,6 +347,7 @@ function normalizeProject(value: unknown) {
     likes,
     createdAt,
     author,
+    comments,
   } satisfies ProjectWithAuthor;
 }
 
@@ -329,6 +397,56 @@ function normalizeDate(value: string | null) {
   }
 
   return value.length >= 10 ? value.slice(0, 10) : value;
+}
+
+function normalizeComments(value: unknown): ProjectComment[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((comment) => normalizeComment(comment))
+    .filter((comment): comment is ProjectComment => comment !== null);
+}
+
+function normalizeComment(value: unknown): ProjectComment | null {
+  const record = asRecord(value);
+
+  if (!record) {
+    return null;
+  }
+
+  const userRecord =
+    asRecord(record.user) ??
+    asRecord(record.author) ??
+    asRecord(record.owner) ??
+    null;
+  const id = readString(record.id) ?? readString(record.commentId);
+  const text =
+    readString(record.text) ??
+    readString(record.content) ??
+    readString(record.body);
+  const authorName =
+    readString(record.authorName) ??
+    readString(record.name) ??
+    readString(userRecord?.name) ??
+    readString(userRecord?.username) ??
+    readString(record.username) ??
+    "Anonymous";
+  const createdAt = normalizeDate(
+    readString(record.createdAt) ?? readString(record.created_at),
+  );
+
+  if (!id || !text) {
+    return null;
+  }
+
+  return {
+    id,
+    text,
+    authorName,
+    createdAt,
+  };
 }
 
 async function readBackendError(
