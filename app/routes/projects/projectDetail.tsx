@@ -1,6 +1,5 @@
 import {
   data,
-  Form,
   Link,
   redirect,
   useActionData,
@@ -10,6 +9,8 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/projectDetail";
+import { InfoBlock } from "~/components/InfoBlock";
+import { ProjectOwnerActions } from "~/components/ProjectOwnerActions";
 import { getAuthSession } from "~/lib/auth.server";
 import {
   deleteProject,
@@ -156,36 +157,10 @@ export default function ProjectDetail() {
                 Open GitHub
               </a>
               {isOwner && (
-                <>
-                  <Link
-                    className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700"
-                    to={`/projects/${project.id}/edit`}
-                  >
-                    Edit project
-                  </Link>
-                  <Form
-                    action={`/projects/${project.id}`}
-                    method="post"
-                    onSubmit={(event) => {
-                      const isConfirmed = window.confirm(
-                        "Delete this project permanently?",
-                      );
-
-                      if (!isConfirmed) {
-                        event.preventDefault();
-                      }
-                    }}
-                  >
-                    <input name="_intent" type="hidden" value="delete" />
-                    <button
-                      className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-70"
-                      disabled={isDeleting}
-                      type="submit"
-                    >
-                      {isDeleting ? "Deleting..." : "Delete project"}
-                    </button>
-                  </Form>
-                </>
+                <ProjectOwnerActions
+                  isDeleting={isDeleting}
+                  projectId={project.id}
+                />
               )}
             </div>
             {actionData?.errors?.form && (
@@ -214,16 +189,5 @@ export default function ProjectDetail() {
         </aside>
       </div>
     </section>
-  );
-}
-
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-stone-100 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-        {label}
-      </p>
-      <p className="mt-2 break-all text-sm text-stone-700">{value}</p>
-    </div>
   );
 }
