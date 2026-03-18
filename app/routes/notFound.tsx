@@ -19,13 +19,13 @@ export default function NotFound() {
         404
       </p>
       <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">
-        Cette URL n'existe pas
+        This page does not exist.
       </h1>
       <Link
         className="mt-8 inline-flex rounded-full bg-stone-950 px-5 py-3 font-medium text-white"
         to="/"
       >
-        Retour à l'accueil
+        Back to Home
       </Link>
     </section>
   );
