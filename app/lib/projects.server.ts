@@ -10,6 +10,25 @@ import type { ProjectWithAuthor } from "./projects";
 
 type BackendProject = Record<string, unknown>;
 
+export type CreateProjectInput = {
+  title: string;
+  summary: string;
+  techTags: string[];
+  demoUrl?: string;
+  repoUrl?: string;
+  imageUrl?: string;
+};
+
+export class ProjectRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ProjectRequestError";
+    this.status = status;
+  }
+}
+
 export async function getAllProjects() {
   let response: Response;
 
@@ -45,6 +64,48 @@ export async function getProjectById(projectId: string | undefined) {
 
   const projects = await getAllProjects();
   return projects.find((project) => project.id === projectId) ?? null;
+}
+
+export async function createProject(
+  project: CreateProjectInput,
+  token: string,
+) {
+  let response: Response;
+
+  try {
+    response = await fetchBackend("/api/projects", {
+      body: JSON.stringify(project),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+  } catch {
+    throw new ProjectRequestError(
+      "Unable to reach the backend projects API.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ProjectRequestError(
+      await readBackendError(response, "Unable to create the project."),
+      response.status >= 400 ? response.status : 500,
+    );
+  }
+
+  const payload = await readJson<unknown>(response);
+  const createdProject = normalizeProject(payload);
+
+  if (!createdProject) {
+    throw new ProjectRequestError(
+      "The backend response is missing project data.",
+      502,
+    );
+  }
+
+  return createdProject;
 }
 
 function normalizeProject(value: unknown) {
@@ -150,4 +211,18 @@ function normalizeDate(value: string | null) {
   }
 
   return value.length >= 10 ? value.slice(0, 10) : value;
+}
+
+async function readBackendError(
+  response: Response,
+  fallbackMessage: string,
+): Promise<string> {
+  const payload = await readJson<unknown>(response).catch(() => null);
+  const record = asRecord(payload);
+
+  return (
+    readString(record?.message) ??
+    readString(record?.error) ??
+    fallbackMessage
+  );
 }
