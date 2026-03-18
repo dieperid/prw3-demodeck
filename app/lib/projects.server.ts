@@ -150,6 +150,38 @@ export async function updateProject(
   );
 }
 
+export async function deleteProject(
+  projectId: string | undefined,
+  token: string,
+) {
+  if (!projectId) {
+    throw new ProjectRequestError("Invalid project id.", 400);
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetchBackend(`/api/projects/${projectId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      method: "DELETE",
+    });
+  } catch {
+    throw new ProjectRequestError(
+      "Unable to reach the backend projects API.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ProjectRequestError(
+      await readBackendError(response, "Unable to delete the project."),
+      response.status >= 400 ? response.status : 500,
+    );
+  }
+}
+
 function normalizeProject(value: unknown) {
   const record = asRecord(value);
 

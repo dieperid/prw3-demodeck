@@ -1,7 +1,27 @@
-import { Link, useLoaderData } from "react-router";
+import {
+  data,
+  Form,
+  Link,
+  redirect,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+  useRouteLoaderData,
+} from "react-router";
 
 import type { Route } from "./+types/projectDetail";
-import { getProjectById } from "~/lib/projects.server";
+import { getAuthSession } from "~/lib/auth.server";
+import {
+  deleteProject,
+  getProjectById,
+  ProjectRequestError,
+} from "~/lib/projects.server";
+
+type ActionData = {
+  errors: {
+    form: string;
+  };
+};
 
 export function meta({ data }: Route.MetaArgs) {
   return [
@@ -28,8 +48,52 @@ export async function loader({ params }: Route.LoaderArgs) {
   return { project };
 }
 
+export async function action({ params, request }: Route.ActionArgs) {
+  const formData = await request.formData();
+
+  if (formData.get("_intent") !== "delete") {
+    return data<ActionData>(
+      { errors: { form: "Unsupported project action." } },
+      { status: 405 },
+    );
+  }
+
+  const authSession = await getAuthSession(request);
+
+  if (!authSession) {
+    const redirectTo = new URL(request.url).pathname;
+    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+
+  try {
+    await deleteProject(params.id, authSession.token);
+    return redirect("/");
+  } catch (error) {
+    return data<ActionData>(
+      {
+        errors: {
+          form:
+            error instanceof ProjectRequestError
+              ? error.message
+              : "An unexpected error occurred while deleting the project.",
+        },
+      },
+      {
+        status: error instanceof ProjectRequestError ? error.status : 500,
+      },
+    );
+  }
+}
+
 export default function ProjectDetail() {
   const { project } = useLoaderData<typeof loader>();
+  const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
+  const rootData = useRouteLoaderData<typeof import("~/root").loader>("root");
+  const isDeleting =
+    navigation.state === "submitting" &&
+    navigation.formData?.get("_intent") === "delete";
+  const isOwner = rootData?.user?.id === project.author.id;
 
   return (
     <section className="space-y-8">
@@ -91,13 +155,44 @@ export default function ProjectDetail() {
               >
                 Open GitHub
               </a>
-              <Link
-                className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700"
-                to={`/projects/${project.id}/edit`}
-              >
-                Edit project
-              </Link>
+              {isOwner && (
+                <>
+                  <Link
+                    className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700"
+                    to={`/projects/${project.id}/edit`}
+                  >
+                    Edit project
+                  </Link>
+                  <Form
+                    action={`/projects/${project.id}`}
+                    method="post"
+                    onSubmit={(event) => {
+                      const isConfirmed = window.confirm(
+                        "Delete this project permanently?",
+                      );
+
+                      if (!isConfirmed) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <input name="_intent" type="hidden" value="delete" />
+                    <button
+                      className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-70"
+                      disabled={isDeleting}
+                      type="submit"
+                    >
+                      {isDeleting ? "Deleting..." : "Delete project"}
+                    </button>
+                  </Form>
+                </>
+              )}
             </div>
+            {actionData?.errors?.form && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+                {actionData.errors.form}
+              </div>
+            )}
           </div>
         </article>
 
