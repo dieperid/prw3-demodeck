@@ -11,5 +11,5 @@ export default [
     route("projects/new", "routes/projects/newProject.tsx"),
     route("projects/:id/edit", "routes/projects/editProject.tsx"),
   ]),
-  //route("*", "routes/notFound.tsx"),
+  route("*", "routes/notFound.tsx"),
 ] satisfies RouteConfig;
