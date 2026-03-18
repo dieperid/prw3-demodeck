@@ -44,7 +44,7 @@ export async function getProjectById(projectId: string | undefined) {
   }
 
   const projects = await getAllProjects();
-  return projects.find((project) => project.id === projectId) ?? null;
+  return projects.find((project) => project?.id === projectId) ?? null;
 }
 
 function normalizeProject(value: unknown) {
@@ -133,14 +133,11 @@ function normalizeAuthor(project: BackendProject) {
     readString(authorRecord?.fullName) ??
     readString(project.authorName) ??
     username;
-  const bio =
-    readString(authorRecord?.bio) ?? readString(project.authorBio) ?? "";
 
   return {
     id,
     username,
     name,
-    bio,
   };
 }
 

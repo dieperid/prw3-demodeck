@@ -1,12 +1,15 @@
 import { fetchBackend, readJson, asRecord, readString } from "./backend.server";
+import { getAllProjects } from "./projects.server"; // <-- Imported this
 import type { ProjectWithAuthor } from "./projects";
 
+export type Author = {
+  id: string;
+  username: string;
+  name: string;
+};
+
 export type AuthorProfile = {
-  author: {
-    id: string;
-    username: string;
-    name: string;
-  };
+  author: Author;
   projects: ProjectWithAuthor[];
 };
 
@@ -70,4 +73,64 @@ export async function getAuthorProfile(
   });
 
   return { author, projects };
+}
+
+export async function getAllAuthors(): Promise<
+  (Author & { projectsCount: number })[]
+> {
+  const [usersResponse, allProjects] = await Promise.all([
+    fetchBackend("/api/users").catch(() => null),
+    getAllProjects().catch(() => []),
+  ]);
+
+  if (!usersResponse || !usersResponse.ok) {
+    throw new Response("Unable to load authors from the backend.", {
+      status: 502,
+    });
+  }
+
+  const payload = await readJson<unknown>(usersResponse);
+
+  let rawUsers: unknown[] = [];
+  if (Array.isArray(payload)) {
+    rawUsers = payload;
+  } else {
+    const record = asRecord(payload);
+    if (record && Array.isArray(record.users)) {
+      rawUsers = record.users;
+    } else if (record && Array.isArray(record.data)) {
+      rawUsers = record.data;
+    }
+  }
+
+  const authors = rawUsers
+    .map((rawUser) => {
+      const user = asRecord(rawUser);
+      if (!user) return null;
+
+      const id = user.id ? String(user.id) : null;
+      const username = readString(user.username);
+
+      const firstName = readString(user.firstName) ?? "";
+      const lastName = readString(user.lastName) ?? "";
+      let name = `${firstName} ${lastName}`.trim();
+
+      if (!name) name = username ?? "Unknown User";
+
+      if (!id || !username) return null;
+
+      const projectsCount = allProjects.filter(
+        (project) => String(project?.author.id) === id,
+      ).length;
+
+      return {
+        id,
+        username,
+        name,
+        projectsCount,
+      };
+    })
+    .filter((a): a is Author & { projectsCount: number } => a !== null);
+
+  return authors;
 }
