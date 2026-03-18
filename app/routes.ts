@@ -7,9 +7,9 @@ export default [
   //route("authors/:id", "routes/authors/authorDetail.tsx"),
   route("login", "routes/auth/login.tsx"),
   route("register", "routes/auth/register.tsx"),
-  //layout("routes/middleware.tsx", [
-    //route("projects/new", "routes/projects/newProject.tsx"),
-    //route("projects/:id/edit", "routes/projects/editProject.tsx"),
-    //]),
+  layout("routes/middleware.tsx", [
+    route("projects/new", "routes/projects/newProject.tsx"),
+    route("projects/:id/edit", "routes/projects/editProject.tsx"),
+  ]),
   //route("*", "routes/notFound.tsx"),
 ] satisfies RouteConfig;
