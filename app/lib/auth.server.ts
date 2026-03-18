@@ -51,7 +51,10 @@ export async function authenticateUser(
 
   if (!response.ok) {
     throw new Error(
-      await readBackendError(response, "Unable to authenticate with the backend."),
+      await readBackendError(
+        response,
+        "Unable to authenticate with the backend.",
+      ),
     );
   }
 
@@ -84,7 +87,10 @@ export async function registerUser(
 
   if (!response.ok) {
     throw new Error(
-      await readBackendError(response, "Registration failed. Please try again."),
+      await readBackendError(
+        response,
+        "Registration failed. Please try again.",
+      ),
     );
   }
 
@@ -102,7 +108,9 @@ export async function registerUser(
   return user;
 }
 
-export async function getAuthSession(request: Request): Promise<AuthSession | null> {
+export async function getAuthSession(
+  request: Request,
+): Promise<AuthSession | null> {
   const session = await getSession(request.headers.get("Cookie"));
   const authSession = session.get(AUTH_SESSION_KEY);
 
@@ -154,7 +162,9 @@ export function getSafeRedirectPath(path: FormDataEntryValue | null): string {
   return path;
 }
 
-async function normalizeAuthSession(payload: unknown): Promise<AuthSession | null> {
+async function normalizeAuthSession(
+  payload: unknown,
+): Promise<AuthSession | null> {
   const record = asRecord(payload);
   const token = readString(record?.token) ?? readString(record?.accessToken);
 
@@ -175,7 +185,9 @@ async function normalizeAuthSession(payload: unknown): Promise<AuthSession | nul
   };
 }
 
-async function fetchCurrentUser(token: string): Promise<AuthenticatedUser | null> {
+async function fetchCurrentUser(
+  token: string,
+): Promise<AuthenticatedUser | null> {
   let response: Response;
 
   try {
@@ -262,8 +274,6 @@ async function readBackendError(
   const record = asRecord(payload);
 
   return (
-    readString(record?.message) ??
-    readString(record?.error) ??
-    fallbackMessage
+    readString(record?.message) ?? readString(record?.error) ?? fallbackMessage
   );
 }
