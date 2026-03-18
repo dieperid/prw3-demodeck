@@ -2,7 +2,6 @@ export type ProjectAuthor = {
   id: string;
   username: string;
   name: string;
-  bio: string;
 };
 
 export type Project = {
