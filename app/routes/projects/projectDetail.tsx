@@ -1,5 +1,6 @@
 import {
   data,
+  Form,
   Link,
   redirect,
   useActionData,
@@ -15,6 +16,7 @@ import { getAuthSession } from "~/lib/auth.server";
 import {
   deleteProject,
   getProjectById,
+  likeProject,
   ProjectRequestError,
 } from "~/lib/projects.server";
 
@@ -51,8 +53,9 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 export async function action({ params, request }: Route.ActionArgs) {
   const formData = await request.formData();
+  const intent = formData.get("_intent");
 
-  if (formData.get("_intent") !== "delete") {
+  if (intent !== "delete" && intent !== "like") {
     return data<ActionData>(
       { errors: { form: "Unsupported project action." } },
       { status: 405 },
@@ -67,8 +70,13 @@ export async function action({ params, request }: Route.ActionArgs) {
   }
 
   try {
-    await deleteProject(params.id, authSession.token);
-    return redirect("/");
+    if (intent === "delete") {
+      await deleteProject(params.id, authSession.token);
+      return redirect("/");
+    }
+
+    await likeProject(params.id, authSession.token);
+    return redirect(new URL(request.url).pathname);
   } catch (error) {
     return data<ActionData>(
       {
@@ -76,7 +84,7 @@ export async function action({ params, request }: Route.ActionArgs) {
           form:
             error instanceof ProjectRequestError
               ? error.message
-              : "An unexpected error occurred while deleting the project.",
+              : "An unexpected error occurred while processing the project action.",
         },
       },
       {
@@ -91,9 +99,13 @@ export default function ProjectDetail() {
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const rootData = useRouteLoaderData<typeof import("~/root").loader>("root");
+  const isAuthenticated = rootData?.isAuthenticated ?? false;
   const isDeleting =
     navigation.state === "submitting" &&
     navigation.formData?.get("_intent") === "delete";
+  const isLiking =
+    navigation.state === "submitting" &&
+    navigation.formData?.get("_intent") === "like";
   const isOwner = rootData?.user?.id === project.author.id;
 
   return (
@@ -156,6 +168,25 @@ export default function ProjectDetail() {
               >
                 Open GitHub
               </a>
+              {isAuthenticated ? (
+                <Form action={`/projects/${project.id}`} method="post">
+                  <input name="_intent" type="hidden" value="like" />
+                  <button
+                    className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 disabled:opacity-70"
+                    disabled={isLiking}
+                    type="submit"
+                  >
+                    {isLiking ? "Liking..." : "Like project"}
+                  </button>
+                </Form>
+              ) : (
+                <Link
+                  className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100"
+                  to={`/login?redirectTo=${encodeURIComponent(`/projects/${project.id}`)}`}
+                >
+                  Log in to like
+                </Link>
+              )}
               {isOwner && (
                 <ProjectOwnerActions
                   isDeleting={isDeleting}

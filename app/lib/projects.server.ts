@@ -182,6 +182,48 @@ export async function deleteProject(
   }
 }
 
+export async function likeProject(
+  projectId: string | undefined,
+  token: string,
+) {
+  if (!projectId) {
+    throw new ProjectRequestError("Invalid project id.", 400);
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetchBackend(`/api/projects/${projectId}/like`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      method: "POST",
+    });
+  } catch {
+    throw new ProjectRequestError(
+      "Unable to reach the backend projects API.",
+      502,
+    );
+  }
+
+  if (!response.ok) {
+    throw new ProjectRequestError(
+      await readBackendError(response, "Unable to like the project."),
+      response.status >= 400 ? response.status : 500,
+    );
+  }
+
+  const payload = await readJson<unknown>(response).catch(() => null);
+  const record = asRecord(payload);
+
+  return (
+    readNumber(record?.likes) ??
+    readNumber(record?.likesCount) ??
+    readNumber(record?.likeCount) ??
+    null
+  );
+}
+
 function normalizeProject(value: unknown) {
   const record = asRecord(value);
 
@@ -268,11 +310,16 @@ function normalizeAuthor(project: BackendProject) {
     readString(authorRecord?.fullName) ??
     readString(project.authorName) ??
     username;
+  const bio =
+    readString(authorRecord?.bio) ??
+    readString(project.authorBio) ??
+    "No bio available.";
 
   return {
     id,
     username,
     name,
+    bio,
   };
 }
 
