@@ -17,6 +17,14 @@ export type Project = {
   createdAt: string;
 };
 
+export type ProjectComment = {
+  id: string;
+  text: string;
+  authorName: string;
+  createdAt: string;
+};
+
 export type ProjectWithAuthor = Project & {
   author: ProjectAuthor;
+  comments: ProjectComment[];
 };

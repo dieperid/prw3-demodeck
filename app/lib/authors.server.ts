@@ -71,6 +71,7 @@ export async function getAuthorProfile(
       likes: Number(p?.likes) || 0,
       createdAt: readString(p?.createdAt) ?? new Date().toISOString(),
       author: author,
+      comments: [],
     };
   });
 
