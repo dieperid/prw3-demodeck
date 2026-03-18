@@ -6,6 +6,7 @@ export type Author = {
   id: string;
   username: string;
   name: string;
+  bio: string;
 };
 
 export type AuthorProfile = {
@@ -48,10 +49,11 @@ export async function getAuthorProfile(
   const lastName = readString(user.lastName) ?? "";
   let name = `${firstName} ${lastName}`.trim();
   if (!name) name = username ?? "Unknown User";
+  const bio = readString(user.bio) ?? "No bio available.";
 
   if (!id || !username) return null;
 
-  const author = { id, username, name };
+  const author = { id, username, name, bio };
 
   const rawProjects = Array.isArray(user.projects) ? user.projects : [];
 
@@ -114,6 +116,7 @@ export async function getAllAuthors(): Promise<
       const firstName = readString(user.firstName) ?? "";
       const lastName = readString(user.lastName) ?? "";
       let name = `${firstName} ${lastName}`.trim();
+      const bio = readString(user.bio) ?? "No bio available.";
 
       if (!name) name = username ?? "Unknown User";
 
@@ -127,6 +130,7 @@ export async function getAllAuthors(): Promise<
         id,
         username,
         name,
+        bio,
         projectsCount,
       };
     })
