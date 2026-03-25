@@ -1,87 +1,174 @@
-# Welcome to React Router!
+# PRW3 DemoDeck
 
-A modern, production-ready template for building full-stack React applications using React Router.
+DemoDeck is a full-stack React application for showcasing and exploring developer projects. Users can browse a gallery of projects, filter and sort results, open author profiles, register or log in, and publish or manage their own projects.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+The frontend is built with **React 19**, **React Router 7**, **Redux Toolkit**, and **Tailwind CSS v4**. It communicates with a separate backend API documented in [docs/Backend.md](docs/Backend.md).
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- Browse a gallery of developer projects
+- Search, sort, and filter projects by technical tags
+- View author profiles and project details
+- Register, log in, and log out
+- Create, edit, and delete projects as an authenticated user
+- Like projects and post comments
+- Display global success and error toasts for user actions
+
+## Tech Stack
+
+- React 19
+- React Router 7 with SSR
+- Redux Toolkit
+- Tailwind CSS v4
+- Vite
+- Cookie-based session handling
+- External Express + MariaDB / MySQL backend
+
+## Prerequisites
+
+To run this project locally, make sure you have:
+
+- Node.js
+- npm
+- Docker (optional, for containerized runs)
+- A running DemoDeck backend API
 
 ## Getting Started
 
-### Installation
+### 1. Clone the repository
 
-Install the dependencies:
+```bash
+git clone https://github.com/dieperid/prw3-demodeck.git
+cd prw3-demodeck
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### Development
+### 3. Configure environment variables
 
-Start the development server with HMR:
+Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+Expected `.env` content:
+
+```env
+BACKEND_API_URL=http://localhost:3000
+SESSION_SECRET=your_super_secret_session_key
+```
+
+- `BACKEND_API_URL`: Base URL of the backend service. Do not append `/api`, because the frontend already calls `/api/...`.
+- `SESSION_SECRET`: Secret used to sign the session cookie.
+
+### 4. Start the backend
+
+The frontend expects the backend API to be available separately. See [docs/Backend.md](docs/Backend.md) for backend setup, database initialization, seed data, and manual verification commands.
+
+### 5. Start the frontend
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+The development server is pinned to:
 
-## Building for Production
+```text
+http://localhost:5173
+```
 
-Create a production build:
+Use this exact URL during development to avoid host/origin mismatch issues with forwarded React Router actions.
+
+## Available Scripts
+
+- `npm run dev`: start the Vite / React Router development server
+- `npm run build`: build the application for production
+- `npm run start`: serve the production build
+- `npm run typecheck`: generate route types and run TypeScript checks
+
+## Production Build
+
+The project includes a multi-stage `Dockerfile` for production-oriented builds.
+
+### Build the image
 
 ```bash
-npm run build
+docker build -t demodeck:latest .
 ```
 
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
+### Run the container
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+docker run -p 3000:3000 --env-file .env demodeck:latest
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+The app will then be available at:
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+```text
+http://localhost:3000
 ```
 
-## Styling
+## Application Structure
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+The frontend source code lives in `app/`:
 
----
+```text
+app/
+├── components/      # Reusable UI components
+├── config/          # Store setup, typed hooks, server env access
+├── helpers/         # Validation and small supporting helpers
+├── lib/             # Server/client infrastructure and API integration
+├── routes/          # React Router route modules
+└── state/           # Redux slices and auth types
+```
 
-Built with ❤️ using React Router.
+### Main responsibilities by folder
+
+- `app/routes/`: page-level route modules with loaders and actions
+- `app/lib/`: auth, session, backend fetch helpers, project data helpers, toast helpers
+- `app/components/`: shared UI such as forms, cards, filters, navbar, and toast provider
+- `app/state/`: Redux auth slice used to reflect authenticated user state in the UI
+- `app/config/`: store, hooks, and environment configuration
+
+## Routing Overview
+
+The route tree is defined in `app/routes.ts` and includes:
+
+- `/`: home page and project gallery
+- `/login`: user login
+- `/register`: user registration
+- `/authors`: authors list
+- `/authors/:id`: author detail
+- `/projects/:id`: project detail
+- `/projects/new`: protected project creation route
+- `/projects/:id/edit`: protected project edition route
+- `*`: not found page
+
+Protected routes are wrapped by `app/routes/middleware.tsx`, which redirects unauthenticated users to the login page.
+
+## Architecture Documentation
+
+Additional documentation is available in:
+
+- [docs/architecture-diagram.md](docs/architecture-diagram.md): detailed Mermaid architecture diagrams
+- [docs/Backend.md](docs/Backend.md): backend API setup and usage
+
+## Conventions
+
+This project follows:
+
+- [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+- [Conventional Branch Naming](https://conventional-branch.github.io/)
+
+## Collaboration
+
+This project uses GitHub collaboration tooling:
+
+- Issues
+- Pull Requests
+- GitHub Projects

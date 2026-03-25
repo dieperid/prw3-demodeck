@@ -1,14 +1,29 @@
+import { useEffect } from "react";
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
+import { Provider } from "react-redux";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useAppDispatch } from "~/config/hooks";
+import {
+  destroyAuthCookie,
+  getAuthSession,
+} from "~/lib/auth.server";
+import { logout, setCredentials } from "~/state/auth/authSlice";
+import { store } from "./config/store";
+import { Navbar } from "./components/Navbar";
+import { ToastProvider } from "./components/ToastProvider";
+import { getToast } from "./lib/session.server";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,9 +38,44 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export async function loader({ request }: Route.LoaderArgs) {
+  const [authSession, toastState] = await Promise.all([
+    getAuthSession(request),
+    getToast(request),
+  ]);
+
+  return data(
+    {
+      isAuthenticated: authSession !== null,
+      toast: toastState.toast,
+      user: authSession?.user ?? null,
+    },
+    {
+      headers: toastState.headers ?? undefined,
+    },
+  );
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+
+  if (formData.get("_intent") === "logout") {
+    return redirect("/", {
+      headers: {
+        "Set-Cookie": await destroyAuthCookie(request, {
+          message: "Signed out successfully.",
+          type: "success",
+        }),
+      },
+    });
+  }
+
+  return null;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -33,7 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <Provider store={store}>{children}</Provider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -42,7 +92,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const { isAuthenticated, toast, user } = useLoaderData<typeof loader>();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      dispatch(logout());
+      return;
+    }
+
+    dispatch(
+      setCredentials({
+        id: user.id,
+        name: user.name,
+        token: null,
+      }),
+    );
+  }, [dispatch, isAuthenticated, user]);
+
+  return (
+    <ToastProvider initialToast={toast}>
+      <div className="min-h-screen bg-stone-100 text-stone-950">
+        <Navbar isAuthenticated={isAuthenticated} />
+
+        <main className="mx-auto max-w-6xl px-6 py-10">
+          <Outlet />
+        </main>
+      </div>
+    </ToastProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
@@ -62,11 +140,18 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+    <main className="mx-auto max-w-3xl px-6 py-16">
+      <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">
+          Error
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">
+          {message}
+        </h1>
+        <p className="mt-3 text-base text-stone-600">{details}</p>
+      </div>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre className="mt-6 w-full overflow-x-auto rounded-2xl bg-stone-950 p-4 text-sm text-stone-100">
           <code>{stack}</code>
         </pre>
       )}
