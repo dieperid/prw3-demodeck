@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   data,
   redirect,
@@ -7,8 +8,10 @@ import {
 
 import type { Route } from "./+types/newProject";
 import { ProjectEditorForm } from "~/components/ProjectEditorForm";
+import { useToast } from "~/components/ToastProvider";
 import { getAuthSession } from "~/lib/auth.server";
 import { createProject, ProjectRequestError } from "~/lib/projects.server";
+import { createToastCookie } from "~/lib/session.server";
 import {
   buildProjectInput,
   getEmptyProjectFormValues,
@@ -32,7 +35,14 @@ export async function action({ request }: Route.ActionArgs) {
   const authSession = await getAuthSession(request);
 
   if (!authSession) {
-    throw redirect("/login?redirectTo=%2Fprojects%2Fnew");
+    throw redirect("/login?redirectTo=%2Fprojects%2Fnew", {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Please log in to publish a project.",
+          type: "error",
+        }),
+      },
+    });
   }
 
   const formData = await request.formData();
@@ -46,7 +56,14 @@ export async function action({ request }: Route.ActionArgs) {
   try {
     const project = await createProject(buildProjectInput(defaultValues), authSession.token);
 
-    return redirect(`/projects/${project.id}`);
+    return redirect(`/projects/${project.id}`, {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Project published successfully.",
+          type: "success",
+        }),
+      },
+    });
   } catch (error) {
     return data<ProjectFormActionData>(
       {
@@ -68,9 +85,21 @@ export async function action({ request }: Route.ActionArgs) {
 export default function NewProject() {
   const actionData = useActionData<ProjectFormActionData>();
   const navigation = useNavigation();
+  const { pushToast } = useToast();
   const isSubmitting = navigation.state === "submitting";
   const defaultValues =
     actionData?.defaultValues ?? getEmptyProjectFormValues();
+
+  useEffect(() => {
+    if (!actionData?.errors?.form) {
+      return;
+    }
+
+    pushToast({
+      message: actionData.errors.form,
+      type: "error",
+    });
+  }, [actionData, pushToast]);
 
   return (
     <section className="space-y-8">

@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { data, redirect, useActionData } from "react-router";
 
 import type { Route } from "./+types/login";
 import { AuthScreen } from "~/components/AuthScreen";
+import { useToast } from "~/components/ToastProvider";
 import {
   authenticateUser,
   createAuthCookie,
@@ -57,7 +59,10 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    const cookieHeader = await createAuthCookie(request, session);
+    const cookieHeader = await createAuthCookie(request, session, {
+      message: "Welcome back.",
+      type: "success",
+    });
 
     return redirect(redirectTo, {
       headers: { "Set-Cookie": cookieHeader },
@@ -80,6 +85,18 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function Login() {
   const actionData = useActionData<typeof action>();
+  const { pushToast } = useToast();
+
+  useEffect(() => {
+    if (!actionData?.errors?.form) {
+      return;
+    }
+
+    pushToast({
+      message: actionData.errors.form,
+      type: "error",
+    });
+  }, [actionData, pushToast]);
 
   return (
     <AuthScreen

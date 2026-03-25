@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -21,6 +22,8 @@ import {
 import { logout, setCredentials } from "~/state/auth/authSlice";
 import { store } from "./config/store";
 import { Navbar } from "./components/Navbar";
+import { ToastProvider } from "./components/ToastProvider";
+import { getToast } from "./lib/session.server";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -36,12 +39,21 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const authSession = await getAuthSession(request);
+  const [authSession, toastState] = await Promise.all([
+    getAuthSession(request),
+    getToast(request),
+  ]);
 
-  return {
-    isAuthenticated: authSession !== null,
-    user: authSession?.user ?? null,
-  };
+  return data(
+    {
+      isAuthenticated: authSession !== null,
+      toast: toastState.toast,
+      user: authSession?.user ?? null,
+    },
+    {
+      headers: toastState.headers ?? undefined,
+    },
+  );
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -49,7 +61,12 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (formData.get("_intent") === "logout") {
     return redirect("/", {
-      headers: { "Set-Cookie": await destroyAuthCookie(request) },
+      headers: {
+        "Set-Cookie": await destroyAuthCookie(request, {
+          message: "Signed out successfully.",
+          type: "success",
+        }),
+      },
     });
   }
 
@@ -75,7 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isAuthenticated, user } = useLoaderData<typeof loader>();
+  const { isAuthenticated, toast, user } = useLoaderData<typeof loader>();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -94,13 +111,15 @@ export default function App() {
   }, [dispatch, isAuthenticated, user]);
 
   return (
-    <div className="min-h-screen bg-stone-100 text-stone-950">
-      <Navbar isAuthenticated={isAuthenticated} />
+    <ToastProvider initialToast={toast}>
+      <div className="min-h-screen bg-stone-100 text-stone-950">
+        <Navbar isAuthenticated={isAuthenticated} />
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <Outlet />
-      </main>
-    </div>
+        <main className="mx-auto max-w-6xl px-6 py-10">
+          <Outlet />
+        </main>
+      </div>
+    </ToastProvider>
   );
 }
 
