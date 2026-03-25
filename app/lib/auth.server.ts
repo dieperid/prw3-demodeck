@@ -7,7 +7,9 @@ import {
   readNumber,
   readString,
 } from "./backend.server";
+import type { ToastInput } from "./toast";
 import { commitSession, destroySession, getSession } from "./session.server";
+import { flashToast } from "./session.server";
 
 const AUTH_SESSION_KEY = "authSession";
 
@@ -143,14 +145,28 @@ export async function isAuthenticated(request: Request): Promise<boolean> {
 export async function createAuthCookie(
   request: Request,
   authSession: AuthSession,
+  toast?: ToastInput,
 ): Promise<string> {
   const session = await getSession(request.headers.get("Cookie"));
   session.set(AUTH_SESSION_KEY, authSession);
+  if (toast) {
+    flashToast(session, toast);
+  }
   return commitSession(session);
 }
 
-export async function destroyAuthCookie(request: Request): Promise<string> {
+export async function destroyAuthCookie(
+  request: Request,
+  toast?: ToastInput,
+): Promise<string> {
   const session = await getSession(request.headers.get("Cookie"));
+
+  if (toast) {
+    session.unset(AUTH_SESSION_KEY);
+    flashToast(session, toast);
+    return commitSession(session);
+  }
+
   return destroySession(session);
 }
 

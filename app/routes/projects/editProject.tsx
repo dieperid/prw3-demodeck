@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   data,
   redirect,
@@ -8,12 +9,14 @@ import {
 
 import type { Route } from "./+types/editProject";
 import { ProjectEditorForm } from "~/components/ProjectEditorForm";
+import { useToast } from "~/components/ToastProvider";
 import { getAuthSession } from "~/lib/auth.server";
 import {
   getProjectById,
   ProjectRequestError,
   updateProject,
 } from "~/lib/projects.server";
+import { createToastCookie } from "~/lib/session.server";
 import {
   buildProjectInput,
   getProjectFormValues,
@@ -53,7 +56,14 @@ export async function action({ params, request }: Route.ActionArgs) {
 
   if (!authSession) {
     const redirectTo = new URL(request.url).pathname;
-    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Please log in to edit this project.",
+          type: "error",
+        }),
+      },
+    });
   }
 
   const formData = await request.formData();
@@ -67,7 +77,14 @@ export async function action({ params, request }: Route.ActionArgs) {
   try {
     const projectId = await updateProject(params.id, buildProjectInput(defaultValues), authSession.token);
 
-    return redirect(`/projects/${projectId}`);
+    return redirect(`/projects/${projectId}`, {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Project updated successfully.",
+          type: "success",
+        }),
+      },
+    });
   } catch (error) {
     return data<ProjectFormActionData>(
       {
@@ -90,9 +107,21 @@ export default function EditProject() {
   const { project } = useLoaderData<typeof loader>();
   const actionData = useActionData<ProjectFormActionData>();
   const navigation = useNavigation();
+  const { pushToast } = useToast();
   const isSubmitting = navigation.state === "submitting";
   const defaultValues =
     actionData?.defaultValues ?? getProjectFormValues(project);
+
+  useEffect(() => {
+    if (!actionData?.errors?.form) {
+      return;
+    }
+
+    pushToast({
+      message: actionData.errors.form,
+      type: "error",
+    });
+  }, [actionData, pushToast]);
 
   return (
     <section className="space-y-8">

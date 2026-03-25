@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   data,
   Form,
@@ -12,6 +13,7 @@ import {
 import type { Route } from "./+types/projectDetail";
 import { InfoBlock } from "~/components/InfoBlock";
 import { ProjectOwnerActions } from "~/components/ProjectOwnerActions";
+import { useToast } from "~/components/ToastProvider";
 import { getAuthSession } from "~/lib/auth.server";
 import {
   createProjectComment,
@@ -20,6 +22,7 @@ import {
   likeProject,
   ProjectRequestError,
 } from "~/lib/projects.server";
+import { createToastCookie } from "~/lib/session.server";
 
 type CommentFormValues = {
   authorName: string;
@@ -140,17 +143,38 @@ export async function action({ params, request }: Route.ActionArgs) {
   const authSession = await getAuthSession(request);
 
   if (!authSession) {
-    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    throw redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Please log in to continue.",
+          type: "error",
+        }),
+      },
+    });
   }
 
   try {
     if (intent === "delete") {
       await deleteProject(params.id, authSession.token);
-      return redirect("/");
+      return redirect("/", {
+        headers: {
+          "Set-Cookie": await createToastCookie(request, {
+            message: "Project deleted successfully.",
+            type: "success",
+          }),
+        },
+      });
     }
 
     await likeProject(params.id, authSession.token);
-    return redirect(redirectTo);
+    return redirect(redirectTo, {
+      headers: {
+        "Set-Cookie": await createToastCookie(request, {
+          message: "Thanks for liking this project.",
+          type: "success",
+        }),
+      },
+    });
   } catch (error) {
     return data<ActionData>(
       {
@@ -174,6 +198,7 @@ export default function ProjectDetail() {
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const rootData = useRouteLoaderData<typeof import("~/root").loader>("root");
+  const { pushToast } = useToast();
   const isAuthenticated = rootData?.isAuthenticated ?? false;
   const commentValues = actionData?.commentValues ?? getEmptyCommentValues();
   const commentFormKey = `${commentValues.authorName}:${commentValues.text}`;
@@ -189,6 +214,28 @@ export default function ProjectDetail() {
     navigation.state === "submitting" &&
     navigation.formData?.get("_intent") === "comment";
   const isOwner = rootData?.user?.id === project.author.id;
+
+  useEffect(() => {
+    if (!actionData?.errors?.form) {
+      return;
+    }
+
+    pushToast({
+      message: actionData.errors.form,
+      type: "error",
+    });
+  }, [actionData, pushToast]);
+
+  useEffect(() => {
+    if (!actionData?.createdComment) {
+      return;
+    }
+
+    pushToast({
+      message: "Comment published successfully.",
+      type: "success",
+    });
+  }, [actionData?.createdComment, pushToast]);
 
   return (
     <section className="space-y-8">
