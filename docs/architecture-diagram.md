@@ -191,7 +191,59 @@ flowchart TD
 - `root.tsx` reads the authenticated session on every request and hydrates the Redux auth slice.
 - Protected routes (`projects/new` and `projects/:id/edit`) are guarded through `routes/middleware.tsx` and auth checks inside route actions.
 
-## 5. Toast / Flash Message Flow
+## 5. Publish Project Flow (Frontend -> Backend)
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as ProjectEditorForm
+    participant R as routes/projects/newProject.tsx action
+    participant P as lib/project-form.ts
+    participant S as auth.server.ts + session.server.ts
+    participant L as lib/projects.server.ts
+    participant A as Backend API POST /api/projects
+    participant D as MariaDB / MySQL
+    participant T as ToastProvider
+
+    U->>F: Fill project fields and submit
+    F->>R: POST form data
+    R->>S: Read auth session
+
+    alt Not authenticated
+        S-->>R: No auth session
+        R-->>U: Redirect to /login?redirectTo=/projects/new
+        R->>S: Flash error toast in cookie
+        S-->>T: "Please log in to publish a project."
+    else Authenticated
+        S-->>R: Auth token
+        R->>P: Read form values and validate
+
+        alt Validation errors
+            P-->>R: Field errors + default values
+            R-->>F: Return 400 with action data
+            F->>T: Push inline error toast when form error exists
+        else Valid payload
+            P-->>R: Normalized CreateProjectInput
+            R->>L: createProject(input, token)
+            L->>A: POST JSON + Bearer token
+            A->>D: Insert project record
+            D-->>A: Created project row
+            A-->>L: Created project payload
+            L-->>R: Normalized project
+            R->>S: Flash success toast in cookie
+            R-->>U: Redirect to /projects/:id
+            S-->>T: "Project published successfully."
+        end
+    end
+```
+
+### Notes
+
+- `routes/projects/newProject.tsx` handles the full publish action lifecycle.
+- `lib/project-form.ts` trims inputs, validates required fields, validates URLs, and converts comma/newline separated tags into `techTags[]`.
+- `lib/projects.server.ts` sends the authenticated `POST /api/projects` request and normalizes the backend response before redirecting to the new project detail page.
+
+## 6. Toast / Flash Message Flow
 
 ```mermaid
 flowchart TD
